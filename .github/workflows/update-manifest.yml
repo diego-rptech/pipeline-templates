@@ -1,0 +1,51 @@
+name: Update Kustomize Manifest
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      ecr-repository:
+        required: true
+        type: string
+      application:
+        required: true
+        type: string
+    secrets:
+      PAT_DEPLOY:
+        required: true
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Fetch manifest repository
+        uses: actions/checkout@v3
+        with:
+          repository: jusfy/devops
+          token: ${{ secrets.PAT_DEPLOY }}
+          ref: main
+          path: devops-manifests
+          fetch-depth: 1
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+        with:
+          kustomize-version: "3.6.1"
+
+      - name: Update Kubernetes resources
+        run: |
+          cd devops-manifests/gitops/kustomize/${{ inputs.environment }}/overlays/${{ inputs.application }}
+          kustomize edit set image IMAGE_NAME:TAG=${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}
+          cat kustomization.yaml
+
+      - name: Commit files and Push for Sync Argocd
+        working-directory: devops-manifests
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Committing files"
+          git add .
+          git commit -am "update image tag ${{ github.sha }}" && git push origin main

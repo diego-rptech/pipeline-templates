@@ -1,0 +1,47 @@
+name: ArgoCD Sync App
+
+on:
+  workflow_call:
+    inputs:
+      application:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+    secrets:
+      ARGOCD_AUTH_TOKEN:
+        required: true
+      ARGOCD_SERVER:
+        required: true
+
+jobs:
+  sync-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Sync ArgoCD app
+        run: |
+          argocd app sync ${{ inputs.application }}-${{ inputs.environment }} \
+            --grpc-web --insecure \
+            --auth-token $ARGOCD_AUTH_TOKEN \
+            --server $ARGOCD_SERVER
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+
+      - name: Wait for sync to complete and app to be healthy
+        run: |
+          argocd app wait ${{ inputs.application }}-${{ inputs.environment }} \
+            --grpc-web --insecure \
+            --auth-token $ARGOCD_AUTH_TOKEN \
+            --server $ARGOCD_SERVER \
+            --health --operation --timeout 300
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}

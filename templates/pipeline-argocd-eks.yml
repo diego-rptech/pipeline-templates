@@ -1,0 +1,92 @@
+name: DEPLOY ON EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "develop"
+        type: choice
+        options:
+          - "develop"
+          - "staging"
+          - "main"
+  push:
+    branches: [develop, main, staging]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+
+  build-and-push:
+    uses: jusfy/workflows-templates/.github/workflows/build.yml@main
+    with:
+      ecr-repository: 'jusfy-jusbill'
+    secrets: inherit
+
+  update-manifests-develop:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'develop')
+    uses: jusfy/workflows-templates/.github/workflows/update-manifest.yml@main
+    needs: build-and-push
+    with:
+      environment: 'dev'
+      ecr-repository: '944279429428.dkr.ecr.us-east-2.amazonaws.com'
+      application: 'jusfy-jusbill'
+    secrets: inherit
+
+  sync-argocd-develop:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'develop')
+    needs: update-manifests-develop
+    uses: jusfy/workflows-templates/.github/workflows/sync-argocd.yml@main
+    with:
+      application: 'jusfy-jusbill'
+      environment: 'dev'
+    secrets:
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+
+
+  update-manifests-staging:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'staging')
+    uses: jusfy/workflows-templates/.github/workflows/update-manifest.yml@main
+    needs: build-and-push
+    with:
+      environment: 'stg'
+      ecr-repository: '944279429428.dkr.ecr.us-east-2.amazonaws.com'
+      application: 'jusfy-jusbill'
+    secrets: inherit
+
+  sync-argocd-staging:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'staging')
+    needs: update-manifests-staging
+    uses: jusfy/workflows-templates/.github/workflows/sync-argocd.yml@main
+    with:
+      application: 'jusfy-jusbill'
+      environment: 'stg'
+    secrets:
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+
+  update-manifests-production:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'main')
+    uses: jusfy/workflows-templates/.github/workflows/update-manifest.yml@main
+    needs: build-and-push
+    with:
+      environment: 'prd'
+      ecr-repository: '944279429428.dkr.ecr.us-east-2.amazonaws.com'
+      application: 'jusfy-jusbill'
+    secrets: inherit
+
+  sync-argocd-production:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.branch == 'main')
+    needs: update-manifests-production
+    uses: jusfy/workflows-templates/.github/workflows/sync-argocd.yml@main
+    with:
+      application: 'jusfy-jusbill'
+      environment: 'prd'
+    secrets:
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+      ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
