@@ -49,11 +49,20 @@ jobs:
           sed -i "s|image: .*|image: ${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}|g" manifestos/deployment.yaml
 
 
-      - name: Commit files and Push for Sync Argocd
-        working-directory: manifestos
+      # - name: Commit files and Push for Sync Argocd
+      #   working-directory: manifestos
+      #   run: |
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      #     echo "Committing files"
+      #     git add .
+      #     git commit -am "update image tag ${{ github.sha }}" && git push origin main
+
+      - name: Commit e Push do Manifesto
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          echo "Committing files"
-          git add .
-          git commit -am "update image tag ${{ github.sha }}" && git push origin main
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+          git add manifestos/deployment.yaml
+          git commit -m "Atualiza imagem para tag ${TAG}" || echo "Nenhuma alteração para commit"
+          git push origin HEAD
