@@ -40,9 +40,6 @@ jobs:
       #     cd devops-manifests/gitops/kustomize/${{ inputs.environment }}/overlays/${{ inputs.application }}
       #     kustomize edit set image IMAGE_NAME:TAG=${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}
       #     cat kustomization.yaml
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
 
       - name: Update Kubernetes resources
         run: |
