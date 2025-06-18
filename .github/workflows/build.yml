@@ -16,8 +16,8 @@ on:
         default: './Dockerfile'
         type: string
       aws-region:
-        description: 'Account Region. Defaults to us-east-2'
-        default: 'us-east-2'
+        description: 'Account Region. Defaults to us-east-1'
+        default: 'us-east-1'
         type: string
  
 
