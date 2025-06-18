@@ -35,11 +35,16 @@ jobs:
         with:
           kustomize-version: "3.6.1"
 
+      # - name: Update Kubernetes resources
+      #   run: |
+      #     cd devops-manifests/gitops/kustomize/${{ inputs.environment }}/overlays/${{ inputs.application }}
+      #     kustomize edit set image IMAGE_NAME:TAG=${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}
+      #     cat kustomization.yaml
+
       - name: Update Kubernetes resources
         run: |
-          cd devops-manifests/gitops/kustomize/${{ inputs.environment }}/overlays/${{ inputs.application }}
-          kustomize edit set image IMAGE_NAME:TAG=${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}
-          cat kustomization.yaml
+          sed -i "s|image: .*|image: ${{ inputs.ecr-repository }}/${{ inputs.application }}:${{ github.sha }}|g" manifestos/deployment.yaml
+
 
       - name: Commit files and Push for Sync Argocd
         working-directory: devops-manifests
