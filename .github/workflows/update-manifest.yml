@@ -58,11 +58,11 @@ jobs:
       #     git add .
       #     git commit -am "update image tag ${{ github.sha }}" && git push origin main
 
-      - name: Commit e Push do Manifesto
+      - name: Configura Git e faz push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_DEPLOY }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_DEPLOY }}@github.com/diego-rptech/app-nodejs.git
           git add manifestos/deployment.yaml
           git commit -m "Atualiza imagem para tag ${TAG}" || echo "Nenhuma alteração para commit"
           git push origin HEAD
